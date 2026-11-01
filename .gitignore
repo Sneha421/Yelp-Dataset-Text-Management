@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project
+data/
+.env
+*.pkl
+annotate.csv
+results/*
+!results/.gitkeep
+.venv-lucene/

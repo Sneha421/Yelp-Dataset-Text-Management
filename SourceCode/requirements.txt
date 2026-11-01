@@ -1,0 +1,8 @@
+# Used today: download_data.py. Search engine and application use only the standard library.
+kagglehub
+
+# Needed for the remaining tasks (3.2 plots/tokenizer comparison, 3.4 sentiment)
+numpy
+matplotlib
+nltk
+vaderSentiment
