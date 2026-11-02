@@ -1,9 +1,12 @@
-# Used today: download_data.py. Search engine and application use only the standard library.
+# download_data.py
 kagglehub
 
-# Needed for the remaining tasks (3.2 plots/tokenizer comparison, 3.4 sentiment)
+# Search engine (numpy) and tokenizer (regex). The Lucene baseline needs Pyserini in a separate virtualenv, see README.
+
 numpy
+regex
+
+# Remaining tasks (3.2 plots/tokenizer comparison, 3.4 sentiment)
 matplotlib
 nltk
-regex
 vaderSentiment

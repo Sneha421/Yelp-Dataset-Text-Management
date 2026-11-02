@@ -19,7 +19,7 @@ def _topk(ids, vals, k):
 
 
 def tfidf_cosine(idx, query, k=10):
-    """ltc.ltc: sublinear tf (1+log tf) x idf=log(N/df) on both query and document, cosine-normalised."""
+    """lnc.ltc (SMART, document.query): document = (1+log tf), no idf, cosine; query = (1+log tf) x log(N/df), cosine."""
     q_tf = Counter(t for t in tokenize(query) if idx.df(t))
     if not q_tf:
         return []
@@ -29,7 +29,7 @@ def tfidf_cosine(idx, query, k=10):
         qw = (1 + math.log(qtf)) * idf
         q_sq += qw * qw
         ids, tfs = idx.postings(t)
-        scores[ids] += qw * (1 + np.log(tfs.astype(np.float64))) * idf
+        scores[ids] += qw * (1 + np.log(tfs.astype(np.float64)))
     cand = np.flatnonzero(scores)
     return _topk(cand, scores[cand] / ((math.sqrt(q_sq) or 1.0) * idx.doc_norm[cand]), k)
 

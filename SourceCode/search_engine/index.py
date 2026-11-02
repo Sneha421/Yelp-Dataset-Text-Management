@@ -3,7 +3,7 @@
 Layout of an index directory:
   doc_ids.u32 / tfs.u16   all postings back to back, term by term, doc ids ascending
   doc_len.npy             tokens per review          offsets.npy   byte offset of each review line
-  doc_norm.npy            L2 norm of each review's TF-IDF vector (for cosine)
+  doc_norm.npy            L2 norm of each review's log-tf vector (for lnc cosine)
   biz.npy                 index of each review's business in meta["businesses"]
   meta.pkl                N, avgdl, vocab (term -> row), per-row postings start/count, business table
 Review text is not stored; it is re-read from review.json by byte offset when a result is shown.
@@ -123,8 +123,7 @@ def build_index(review_path, business_path, out_dir, limit=None):
             pos += len(ids)
             ids.tofile(fi)
             tfs.tofile(ft)
-            idf = math.log(N / len(ids))
-            w = (1 + np.log(np.frombuffer(tfs, dtype=np.uint16).astype(np.float64))) * idf
+            w = 1 + np.log(np.frombuffer(tfs, dtype=np.uint16).astype(np.float64))
             sq[np.frombuffer(ids, dtype=np.uint32)] += w * w  # doc ids are unique within a term
     doc_norm = np.sqrt(sq)
     doc_norm[doc_norm == 0] = 1.0

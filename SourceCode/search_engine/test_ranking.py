@@ -61,12 +61,13 @@ class RankingTest(unittest.TestCase):
     def test_tfidf_matches_formula(self):
         N = len(TEXTS)
         df = lambda t: sum(t in c for c in self.docs)
-        vec = lambda c: {t: (1 + math.log(n)) * math.log(N / df(t)) for t, n in c.items()}
+        dvec = lambda c: {t: 1 + math.log(n) for t, n in c.items()}
+        qvec = lambda c: {t: (1 + math.log(n)) * math.log(N / df(t)) for t, n in c.items()}
         q = "amazing pizza service"
-        qv = vec(Counter(t for t in tokenize(q) if df(t)))
+        qv = qvec(Counter(t for t in tokenize(q) if df(t)))
         got = dict(tfidf_cosine(self.idx, q, 100))
         for d, c in enumerate(self.docs):
-            dv = vec(c)
+            dv = dvec(c)
             dot = sum(w * dv.get(t, 0.0) for t, w in qv.items())
             if dot:
                 cos = dot / (math.sqrt(sum(w * w for w in qv.values())) * math.sqrt(sum(w * w for w in dv.values())))

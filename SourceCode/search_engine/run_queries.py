@@ -6,6 +6,7 @@ so tables in the report come from files.
 import argparse
 import csv
 import os
+import statistics
 import sys
 import time
 
@@ -15,12 +16,13 @@ from search_engine.index import InvertedIndex
 from search_engine.ranking import bm25, tfidf_cosine
 
 QUERIES = [
-    "amazing pizza",                     # short, common
-    "friendly staff slow service",       # multi-aspect
-    "best gluten free options",          # specific need
-    "cockroach in my food disgusting",   # rare terms
-    "romantic dinner anniversary",       # intent-style
-    "the",                               # stop-word only (edge case)
+    "cockroach",                         # single rare term, restaurants and hotels
+    "amazing pizza",                     # food, short, common terms
+    "friendly staff but slow service",   # long phrase with a near-stopword
+    "gluten-free options",               # hyphenated token (tokenizer-dependent)
+    "oil change",                        # automotive
+    "hotel room clean quiet",            # travel, topical
+    "rude receptionist long wait",       # medical / services
 ]
 
 
@@ -28,6 +30,17 @@ def snippet(idx, d, n=110):
     r = idx.doc(d)
     t = r["text"].replace("\n", " ")
     return f"[{r['name']}, {r['city']}] " + t[:n] + ("..." if len(t) > n else "")
+
+
+RUNS = 5
+
+
+def timed(fn, *args):
+    """(result, median milliseconds over RUNS calls); each call allocates an N-sized score array."""
+    ms = []
+    for _ in range(RUNS):
+        t0 = time.perf_counter(); res = fn(*args); ms.append(1e3 * (time.perf_counter() - t0))
+    return res, statistics.median(ms)
 
 
 def overlap(a, b):
@@ -55,11 +68,10 @@ def main():
     tfidf_cosine(idx, a.queries[0], depth); bm25(idx, a.queries[0], depth)  # warm the disk cache so timings are fair
     summary, top = [], []
     for q in a.queries:
-        t0 = time.perf_counter(); tf = tfidf_cosine(idx, q, depth); t1 = time.perf_counter()
-        bm = bm25(idx, q, depth); t2 = time.perf_counter()
+        (tf, ms_tf), (bm, ms_bm) = timed(tfidf_cosine, idx, q, depth), timed(bm25, idx, q, depth)
         jac = overlap(tf, bm)
-        print(f"=== {q!r}  (tfidf {1e3*(t1-t0):.1f}ms, bm25 {1e3*(t2-t1):.1f}ms, Jaccard@{depth}={jac:.2f})")
-        summary.append([q, idx.N, depth, f"{1e3*(t1-t0):.2f}", f"{1e3*(t2-t1):.2f}", f"{jac:.3f}"])
+        print(f"=== {q!r}  (tfidf {ms_tf:.1f}ms, bm25 {ms_bm:.1f}ms median of {RUNS}, Jaccard@{depth}={jac:.2f})")
+        summary.append([q, idx.N, depth, f"{ms_tf:.2f}", f"{ms_bm:.2f}", f"{jac:.3f}"])
         for name, res in (("TF-IDF", tf), ("BM25", bm)):
             print(f" [{name}]")
             for rank, (d, s) in enumerate(res, 1):

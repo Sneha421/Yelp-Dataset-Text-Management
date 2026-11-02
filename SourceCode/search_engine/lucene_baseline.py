@@ -17,17 +17,13 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common import load_reviews, tokenize  # noqa: E402
+from search_engine.run_queries import QUERIES  # noqa: E402
 
 _JDK = "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
 if os.path.isdir(_JDK):  # Homebrew openjdk@21 (macOS); elsewhere set JAVA_HOME and JVM_PATH yourself
     os.environ.setdefault("JAVA_HOME", _JDK)
     os.environ.setdefault("JVM_PATH", os.path.join(_JDK, "lib", "server", "libjvm.dylib"))
 os.environ.setdefault("OPENAI_API_KEY", "unused")  # pyserini.search builds an OpenAI client at import; never called
-
-QUERIES = [
-    "amazing pizza", "friendly staff slow service", "best gluten free options",
-    "cockroach in my food disgusting", "romantic dinner anniversary", "the",
-]
 
 
 def prepare(a):
@@ -62,9 +58,11 @@ def compare(a):
     searcher.set_analyzer(JWhiteSpaceAnalyzer())
     searcher.set_bm25(a.k1, a.b)  # same k1/b as ours
     for q in a.queries:
-        mine, lucene = bm25(ours, q, a.k, a.k1, a.b), lucene_search(searcher, q, a.k)
-        sm, sl = [d for d, _ in mine], [d for d, _ in lucene]
+        mine, lucene = bm25(ours, q, a.k + 1, a.k1, a.b), lucene_search(searcher, q, a.k + 1)  # one extra to see the cut-off gap
+        sm, sl = [d for d, _ in mine[:a.k]], [d for d, _ in lucene[:a.k]]
         print(f"=== {q!r}  overlap@{a.k}={len(set(sm) & set(sl))}/{a.k}  same order={sm == sl}  top1 same={sm[:1] == sl[:1]}")
+        gap = lambda r: (r[a.k - 1][1] - r[a.k][1]) / r[a.k - 1][1] if len(r) > a.k else float("nan")
+        print(f"   relative score gap between rank {a.k} and {a.k + 1}: ours {gap(mine):.4f} lucene {gap(lucene):.4f}")
         for rank, ((dm, s1), (dl, s2)) in enumerate(zip(mine[:3], lucene[:3]), 1):
             print(f"   {rank}. ours doc {dm} {s1:8.3f} | lucene doc {dl} {s2:8.3f}")
     compare_tfidf(a, ours, searcher)
@@ -75,12 +73,10 @@ def compare_tfidf(a, ours, searcher):
     (see the ClassicSimilarity javadoc for its exact formula), so only the rankings are comparable, and low overlap is expected."""
     from jnius import autoclass
 
-    from jnius import autoclass
-
     from search_engine.ranking import tfidf_cosine
 
     searcher.object.searcher.setSimilarity(autoclass("org.apache.lucene.search.similarities.ClassicSimilarity")())
-    print("\n--- TF-IDF: ours (ltc.ltc cosine) vs Lucene ClassicSimilarity")
+    print("\n--- TF-IDF: ours (lnc.ltc cosine) vs Lucene ClassicSimilarity")
     for q in a.queries:
         mine, lucene = tfidf_cosine(ours, q, a.k), lucene_search(searcher, q, a.k)
         sm, sl = [d for d, _ in mine], [d for d, _ in lucene]

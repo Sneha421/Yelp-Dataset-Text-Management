@@ -94,8 +94,8 @@ if membership["10%"]:
 
 ## Run (from `SourceCode/`)
 ```
-python -m search_engine.index ../data/review.json --limit 100000 --out ../results/index_100k   # an index is a directory
-python -m search_engine.run_queries ../results/index_100k
+python -m search_engine.index ../data/review.json --out ../results/index_full   # full data, about 9 minutes; an index is a directory (add --limit N for a sample)
+python -m search_engine.run_queries ../results/index_full --out ../results/final
 python -m unittest search_engine.test_ranking          # ranking checked against per-document formulas
 python -m application.comparison ../data/review.json --limit 100000 --annotate 200
 python -m application.evaluate annotate.csv
@@ -111,11 +111,11 @@ brew install openjdk@21                      # macOS; any JDK 21 works
 python3 -m venv .venv-lucene && .venv-lucene/bin/pip install pyserini
 cd SourceCode
 PY=../.venv-lucene/bin/python
-$PY -m search_engine.lucene_baseline prepare ../data/review.json --limit 200000 --out ../results/lucene_docs
+$PY -m search_engine.lucene_baseline prepare ../data/review.json --out ../results/lucene_docs   # add --limit N for a sample
 $PY -m search_engine.lucene_baseline index ../results/lucene_docs --out ../results/lucene_index
-$PY -m search_engine.index ../data/review.json --limit 200000 --out ../results/index_200k
-$PY -m search_engine.lucene_baseline compare ../results/lucene_index ../results/index_200k
+$PY -m search_engine.index ../data/review.json --out ../results/index_full   # the same data as the Lucene input
+$PY -m search_engine.lucene_baseline compare ../results/lucene_index ../results/index_full
 ```
 Off macOS/Homebrew, set `JAVA_HOME` and `JVM_PATH` (path to `libjvm`) before running. Lucene reads the same tokens our
-`tokenize()` produces, so differences come from scoring only (apart from 2 of the first 200,000 reviews, which have no tokens and which Lucene skips as empty). Lucene's BM25 omits the `(k1+1)` numerator factor
-(scores are lower by exactly `k1+1` = 2.2) and stores document length in one lossy byte, so exact order can differ slightly.
+`tokenize()` produces, so differences come from scoring only (apart from 29 of the 6,990,280 reviews, which have no tokens and which Lucene skips as empty). Lucene's BM25 omits the `(k1+1)` numerator factor
+(its scores are ours divided by about `k1+1` = 2.2) and stores document length in one lossy byte, so the ratio varies slightly and near-tied documents can swap places.
