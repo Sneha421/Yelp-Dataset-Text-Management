@@ -96,9 +96,7 @@ if membership["10%"]:
 ```
 python -m search_engine.index ../data/review.json --out ../results/index_full   # full data, about 9 minutes; an index is a directory (add --limit N for a sample)
 python -m search_engine.run_queries ../results/index_full --out ../results/final
-python -m unittest search_engine.test_ranking          # ranking checked against per-document formulas
-python -m application.comparison ../data/review.json --limit 100000 --annotate 200
-python -m application.evaluate annotate.csv
+python -m application.comparison ../data/review.json --limit 200000 --show 10 --out ../results/flagged.csv
 ```
 
 Note: an index is only valid for the tokenizer it was built with. If `common.tokenize()` changes, loading an old index fails with

@@ -64,7 +64,7 @@ def bm25(idx, query, k=10, k1=1.2, b=0.75):
     return _topk(cand, scores[cand], k)
 ```
 
-Correctness: six unit tests (`test_ranking.py`) compare both rankers against independent per-document implementations of the formulas on a small corpus, including several (k1, b) settings, tie-breaking and unknown terms.
+Correctness: our BM25 is cross-checked against Lucene's BM25 on the same tokens (see the comparison below); scores differ only by the constant factor explained there.
 
 ## Analysis
 
@@ -114,7 +114,7 @@ We indexed the same tokens with Lucene (Pyserini 1.6.0, whitespace analyzer on o
 
 Lucene's scores are ours divided by about 2.2 (for example 15.129 against 6.887, and 9.829 against 4.468). Lucene's `BM25Similarity` computes the term-frequency part as freq / (freq + k1(1 − b + b·dl/avgdl)), without the (k1+1) numerator; (k1+1) = 2.2 is a constant, so it does not change the ranking. The ratio is not exactly 2.2 for every document, because Lucene stores document length in one lossy byte. The same effect explains the two top-1 differences: the competing documents are nearly tied (16.967 against 16.964 for "gluten-free options", 22.548 against 22.489 for "hotel room clean quiet"). The overlaps below 10 are cut-off ties as well: for the two queries concerned the relative score gap between rank 10 and rank 11 is 0.0011 and 0.0000, so the documents at the boundary are practically indistinguishable.
 
-**TF-IDF against Lucene's `ClassicSimilarity`.** Top-10 overlap is 7, 5, 6, 8, 8, 9 and 10 (queries 1 to 7). This is a comparison between two variants and not a correctness check: Lucene's classic scoring uses tf = √freq, idf = 1 + log((docCount+1)/(docFreq+1)), a length norm of 1/√length and no cosine over the document vector (Lucene 9.10 javadoc). Our TF-IDF is validated by the unit test against its formula.
+**TF-IDF against Lucene's `ClassicSimilarity`.** Top-10 overlap is 7, 5, 6, 8, 8, 9 and 10 (queries 1 to 7). This is a comparison between two variants and not a correctness check: Lucene's classic scoring uses tf = √freq, idf = 1 + log((docCount+1)/(docFreq+1)), a length norm of 1/√length and no cosine over the document vector (Lucene 9.10 javadoc). Because it is a different variant, this comparison does not validate our TF-IDF.
 
 ## Limitations
 
