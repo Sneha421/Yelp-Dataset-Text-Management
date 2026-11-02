@@ -8,9 +8,12 @@ SourceCode/                 # only our own code; this folder is zipped for submi
   download_data.py          # fetch the two Yelp files from Kaggle into ./data
   .env.example              # Kaggle credentials template
   dataset_analysis/         # 3.2  Zipf, Heaps, custom tokenizer      (TODO)
+    tokenizer.py            # custom Unicode-aware Yelp tokenizer
+    sampling.py             # deterministic nested dataset sampling
   search_engine/            # 3.3  inverted index, TF-IDF, BM25
   trend_analysis/           # 3.4  VADER sentiment, PMI co-occurrence (TODO)
   application/              # 3.5  comparison-sentence detector
+tests/                      # project-level tokenizer and sampling unit tests
 data/                       # downloaded dataset (git-ignored)
 results/                    # generated figures/tables (git-ignored)
 ```
@@ -35,6 +38,59 @@ results/                    # generated figures/tables (git-ignored)
 
 Alternatively, download the Yelp JSON files manually from https://www.yelp.com/dataset and rename them to
 `data/business.json` and `data/review.json`. Please share one download per group rather than everyone downloading it.
+
+## Custom tokenizer
+
+The custom regex tokenizer is designed for noisy Yelp review text. It lowercases ordinary words while preserving contractions
+(`wasn't`), hyphenated expressions (`the-best-food`), emoji sequences, URLs, email addresses, prices (`$25.50`), percentages,
+and runs of `!` and `?`. It uses Unicode-aware matching through the `regex` package.
+
+Install the project dependencies from the repository root:
+
+```bash
+python3 -m pip install -r SourceCode/requirements.txt
+```
+
+Import the tokenizer in another Python file. Run project modules from `SourceCode/` so the package imports resolve consistently:
+
+```python
+from dataset_analysis.tokenizer import custom_tokenize
+
+text = "The-best-food wasn't cheap 😊!"
+tokens = custom_tokenize(text)
+print(tokens)
+# ['the-best-food', "wasn't", 'cheap', '😊', '!']
+```
+
+Compare it interactively with NLTK's Whitespace and WordPunct tokenizers:
+
+```bash
+cd SourceCode
+python3 -m dataset_analysis.tokenizer 'Amazing service!!! Dinner was $25.50 😍'
+```
+
+Use single quotes around terminal input containing `$` so the shell does not treat it as a variable. Run the automated tokenizer
+tests with:
+
+```bash
+python3 -m unittest discover -s tests -p "test_tokenizer.py" -v
+```
+
+The shared `common.tokenize()` function delegates to this custom tokenizer, so the search engine and other group modules use the
+same tokenization rules automatically. Rebuild any existing search index after tokenizer changes.
+
+## Reproducible nested sampling
+
+Sampling utilities are available from `dataset_analysis.sampling`:
+
+```python
+from dataset_analysis.sampling import sample_memberships
+
+membership = sample_memberships(review["review_id"])
+if membership["10%"]:
+    # This review is also in the 30%, 50%, and 100% samples.
+    pass
+```
 
 ## Run (from `SourceCode/`)
 ```

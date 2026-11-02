@@ -1,12 +1,11 @@
 import json
-import re
 
-# Placeholder tokenizer: swap in the group's custom tokenizer (Section 3.2.2) via tokenize().
-_TOKEN_RE = re.compile(r"[a-z0-9]+(?:'[a-z]+)?")
+from dataset_analysis.tokenizer import custom_tokenize
 
 
 def tokenize(text):
-    return _TOKEN_RE.findall(text.lower())
+    """Tokenize text consistently across dataset analysis and search."""
+    return custom_tokenize(text)
 
 
 def load_reviews(path, limit=None):

@@ -3,6 +3,13 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Yelp source data and generated intermediate datasets
+data/raw/
+data/processed/
+
+# macOS metadata
+.DS_Store
+
 # C extensions
 *.so
 

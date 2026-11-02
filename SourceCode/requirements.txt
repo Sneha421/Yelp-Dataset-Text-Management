@@ -5,4 +5,5 @@ kagglehub
 numpy
 matplotlib
 nltk
+regex
 vaderSentiment
