@@ -108,7 +108,7 @@ A sentence is flagged when the summed weight of the rules that match reaches 2.
 
 6.1 Run it:
   python -m application.comparison ../data/review.json --limit 200000 --show 10 --out ../results/flagged.csv
-Parameters: --limit N reviews to read (default 10000; use a very large number such as 100000000 for the whole file);
+Parameters: --limit N reviews to read (default 10000; use 6990280 for the whole file);
 --show N example sentences to print (default 10); --out FILE writes every flagged sentence as CSV;
 --describe prints the rule table (no data file needed).
 Sample output (first 200,000 reviews):
